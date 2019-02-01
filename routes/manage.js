@@ -1,8 +1,10 @@
 var express = require('express');
 var router = express.Router();
+var multer = require('multer')
+var fs = require('fs')
 var User = require('../models/users')
 var Category = require('../models/categorys')
-var multer = require('multer')
+var Good = require('../models/goods')
 
 var storage = multer.diskStorage({
     destination: function (req, file, cb){
@@ -119,7 +121,7 @@ router.post('/category/get_category', function(req, res, next) {
     })
 })
 
-//上传文件
+//上传图片
 router.post('/product/upload_img', upload.single('file'), function(req, res, next) {
     var file = req.file
     successRes.data = {
@@ -128,6 +130,63 @@ router.post('/product/upload_img', upload.single('file'), function(req, res, nex
     }
     // 接收文件成功后返回数据给前端
     res.json(successRes);
+})
+
+//删除图片
+router.post('/product/delete_img', function(req, res, next) {
+    var filename = req.body.uri
+    fs.unlinkSync('../shop-server/public/images/' + filename);
+    successRes.data = {}
+    res.json(successRes)
+})
+
+//新增或更新产品
+router.post('/product/save', function(req, res, next) {
+    if(req.body._id) {
+        Good.updateOne({
+            _id: req.body._id
+        }, {...req.body}).then(product => {
+            successRes.data = product
+            res.json(successRes)
+        })
+    } else {
+        new Good({
+            ...req.body
+        }).save().then((good) => {
+            successRes.data = good
+            res.json(successRes)
+        })
+    }
+})
+
+//产品列表
+router.post('/product/list', function(req, res, next) {
+    let pageNum = req.body.pageNum
+    let pageSize = req.body.pageSize || 10
+    Good.countDocuments().then(count => {
+        let pages = Math.ceil(count / pageSize)
+        let skip = (pageNum - 1) * pageSize
+
+        Good.find().limit(pageSize).skip(skip).sort({_id: -1}).then(goods => {
+            successRes.data = {
+                list: goods,
+                pages,
+                total: count
+            }
+            res.json(successRes)
+        })
+    })
+})
+
+//产品详情
+router.post('/product/detail', function(req, res, next) {
+    let _id = req.body._id
+    Good.findOne({
+        _id
+    }).then(good => {
+        successRes.data = good
+        res.json(successRes)
+    })
 })
 
 module.exports = router;
