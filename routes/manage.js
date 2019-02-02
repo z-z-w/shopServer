@@ -189,4 +189,51 @@ router.post('/product/detail', function(req, res, next) {
     })
 })
 
+//产品上下架
+router.post('/product/set_sale_status', function(req, res, next) {
+    let _id = req.body._id
+    let status = req.body.status
+    Good.updateOne({
+        _id
+    },{
+        status
+    }).then(good => {
+        if(good.ok) {
+            successRes.data = {}
+            res.json(successRes)
+        } else {
+            errRes.msg = "更新商品销售状态失败"
+            res.json(errRes)
+        }
+    })
+})
+
+//搜索产品
+router.post('/product/search', function(req, res, next) {
+    let q = req.body.q
+    let pageSize = req.body.pageSize || 10
+    let pageNum = req.body.pageNum
+    let skip = (pageNum - 1) * pageSize
+    Good.find({
+        name: new RegExp(q + '.*', 'i')
+    }).count().then(count => {
+        if (count) {
+            Good.find({
+                name: new RegExp(q + '.*', 'i')
+            }).skip(skip).limit(pageSize).sort({_id: -1}).then(goods => {
+                successRes.data = {
+                    total: count,
+                    isSearching: true, //用于前端表示正在搜索
+                    lists: goods,
+                    pageNum
+                }
+                res.json(successRes)
+            })
+        } else {
+            errRes.msg = "无搜索结果"
+            res.json(errRes)
+        }
+    })
+})
+
 module.exports = router;
