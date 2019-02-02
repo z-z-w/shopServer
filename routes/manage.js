@@ -121,6 +121,52 @@ router.post('/category/get_category', function(req, res, next) {
     })
 })
 
+//添加品类
+router.post('/category/add_category', function(req, res, next) {
+    let parentId = req.body.parentId
+    let name = req.body.name
+    let id = 1
+    Category.find().sort({id: -1}).limit(1).then(c => {
+        if (c) {
+            id = c[0].id + 1
+        }
+        new Category({
+            id,
+            parentId,
+            name,
+            createTime: +new Date(),
+            status: true
+        }).save().then(c => {
+            if (c) {
+                successRes.data = c
+                res.json(successRes)
+            } else {
+                errRes.msg = '添加失败'
+                res.json(errRes)
+            }
+        })
+    })
+})
+
+//修改品类名称
+router.post('/category/set_category_name', function(req, res, next) {
+    let _id = req.body._id
+    let name = req.body.name
+    Category.updateOne({
+        _id
+    },{
+        name
+    }).then(msg => {
+        if(msg.ok) {
+            successRes.data = {}
+            res.json(successRes)
+        } else {
+            errRes.msg = "更新品类名字失败"
+            res.json(errRes)
+        }
+    })
+})
+
 //上传图片
 router.post('/product/upload_img', upload.single('file'), function(req, res, next) {
     var file = req.file
