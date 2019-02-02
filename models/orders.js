@@ -2,15 +2,6 @@ const mongoose = require('mongoose');
 const OrderSchema = new mongoose.Schema({
     "orderNo": String,
     "payment": Number,
-    "paymentType": Number,
-    "paymentTypeDesc": String,
-    "postage": Number,
-    "status": Number,
-    "statusDesc": String,
-    "paymentTime": String,
-    "sendTime": String,
-    "endTime": String,
-    "closeTime": String,
     "createTime": String,
     "orderItemVoList": [
         {
@@ -24,9 +15,8 @@ const OrderSchema = new mongoose.Schema({
             "createTime": String
         }
     ],
-    "imageHost": String,
-    "shippingId": Number,
-    "shippingVo": String
+    "receiverName": String,
+    "address": String
 });
 
 module.exports = mongoose.model('Order', OrderSchema);

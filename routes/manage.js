@@ -5,6 +5,7 @@ var fs = require('fs')
 var User = require('../models/users')
 var Category = require('../models/categorys')
 var Good = require('../models/goods')
+var Order = require('../models/orders')
 
 var storage = multer.diskStorage({
     destination: function (req, file, cb){
@@ -262,7 +263,7 @@ router.post('/product/search', function(req, res, next) {
     let skip = (pageNum - 1) * pageSize
     Good.find({
         name: new RegExp(q + '.*', 'i')
-    }).count().then(count => {
+    }).countDocuments().then(count => {
         if (count) {
             Good.find({
                 name: new RegExp(q + '.*', 'i')
@@ -271,6 +272,55 @@ router.post('/product/search', function(req, res, next) {
                     total: count,
                     isSearching: true, //用于前端表示正在搜索
                     lists: goods,
+                    pageNum
+                }
+                res.json(successRes)
+            })
+        } else {
+            errRes.msg = "无搜索结果"
+            res.json(errRes)
+        }
+    })
+})
+
+//订单详情
+router.post('/order/list', function(req, res, next) {
+    let pageNum = req.body.pageNum
+    let pageSize = req.body.pageSize || 10
+    Order.countDocuments().then(count => {
+        let pages = Math.ceil(count / pageSize)
+        let skip = (pageNum - 1) * pageSize
+
+        Order.find().limit(pageSize).skip(skip).sort({_id: -1}).then(orders => {
+            successRes.data = {
+                list: orders,
+                pages,
+                total: count
+            }
+            res.json(successRes)
+        })
+    })
+})
+
+//搜索订单
+router.post('/order/search', function(req, res, next) {
+    let q = req.body.q
+    let pageSize = req.body.pageSize || 10
+    let pageNum = req.body.pageNum
+    let skip = (pageNum - 1) * pageSize
+    console.log(q);
+    Order.find({
+        orderNo: new RegExp(q + '.*', 'i')
+    }).countDocuments().then(count => {
+        console.log(count);
+        if (count) {
+            Order.find({
+                orderNo: new RegExp(q + '.*', 'i')
+            }).skip(skip).limit(pageSize).sort({_id: -1}).then(orders => {
+                successRes.data = {
+                    total: count,
+                    isSearching: true, //用于前端表示正在搜索
+                    lists: orders,
                     pageNum
                 }
                 res.json(successRes)
