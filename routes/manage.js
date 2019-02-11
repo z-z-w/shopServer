@@ -63,6 +63,7 @@ router.post('/user/login', function(req, res, next) {
                 _id: user._id,
                 username: user.username
             }));
+            successRes.data = {}
             res.json(successRes)
         }
     })
@@ -163,6 +164,25 @@ router.post('/category/set_category_name', function(req, res, next) {
             res.json(successRes)
         } else {
             errRes.msg = "更新品类名字失败"
+            res.json(errRes)
+        }
+    })
+})
+
+//获取品类下的商品
+router.post('/category/get_goods', function(req, res, next) {
+    let id = req.body.id
+    Good.find({
+        $or: [
+            {categoryId: id},
+            {parentCategoryId: id}
+        ]
+    }).then(goods => {
+        if(goods.length > 0) {
+            successRes.data = goods
+            res.json(successRes)
+        } else {
+            errRes.msg = "该品类下暂无商品"
             res.json(errRes)
         }
     })
