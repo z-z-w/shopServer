@@ -10,7 +10,33 @@ const UsersSchema = new mongoose.Schema({
     "role": Number,
     "createTime": String,
     "updateTime": String,
-    "isAdmin": Boolean
+    "isAdmin": Boolean,
+    "addressList": [{
+        "id": String,
+        "name": String,
+        "tel": String,
+        "province": String,
+        "city": String,
+        "country": String,
+        "address_detail": String,
+        "area_code": String,
+        "postal_code": String,
+        "is_default": Boolean,
+        "address": String,
+        "desc": String
+    }],
+    "cartList": [
+        {
+            "id": String,
+            "name": String,
+            "price": Number,
+            "desc": String,
+            "smpic": String,
+            "count": Number,
+            "stock": Number
+        }
+    ],
+    "orderList": Array,
 });
 
 module.exports = mongoose.model('User', UsersSchema);

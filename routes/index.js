@@ -29,7 +29,10 @@ router.post('/user/login', function(req, res, next) {
             _id: user._id,
             username: user.username
         }));
-        successRes.data = {username: user.username}
+          successRes.data = {
+              _id: user._id,
+              username: user.username,
+          }
         res.json(successRes)
       }
     })
@@ -54,12 +57,16 @@ router.post('/user/sign_up', function(req, res, next) {
                 createTime: +new Date(),
                 isAdmin: false
             }).save().then(succ => {
-              if (succ) {
+                console.log(succ);
+                if (succ) {
                   req.cookies.set('shop_user',JSON.stringify({
                     _id: succ._id,
                     username: succ.username
                   }));
-                  successRes.data = {username: succ.username}
+                  successRes.data = {
+                      _id: succ._id,
+                      username: succ.username,
+                  }
                   res.json(successRes)
               } else {
                   errRes.msg = "注册失败"
@@ -81,7 +88,10 @@ router.get('/user/isLogin',function (req, res, next) {
         //获取当前登录用户的类型,是否是管理员
         User.findById(shopUser._id).then(function(user){
             if (user) {
-                successRes.data = {username: user.username}
+                successRes.data = {
+                    _id: user._id,
+                    username: user.username,
+                }
                 res.json(successRes)
             } else {
                 errRes.msg = '未登录'
@@ -106,6 +116,226 @@ router.post('/user/search', function(req, res, next) {
         errRes.msg = '无搜索结果，换个关键词试试吧~'
           res.json(errRes)
       }
+    })
+})
+
+//保存地址
+router.post('/user/save_address', function(req, res, next) {
+    let _id = req.body._id
+    let addressObj = req.body.addressObj
+    let isOldAddress = false;
+    User.findById({
+        _id
+    }).then(user => {
+        user.addressList.forEach((item,index) => {
+            if (item.id === addressObj.id) {
+                isOldAddress = true
+                user.addressList[index] = {...addressObj}
+            } else if (addressObj.is_default) {
+                user.addressList[index].is_default = false
+            }
+        })
+        if (!isOldAddress) {
+            if(user.addressList.length === 0){
+                addressObj.is_default = true;
+            }
+            user.addressList.push(addressObj);
+        }
+        return user.save();
+    }).then((user, err) => {
+        if(err){
+            errRes.msg = "保存地址失败"
+            res.json(errRes)
+        }else {
+            successRes.data = user.addressList
+            res.json(successRes)
+        }
+    })
+})
+
+//获取地址
+router.post('/user/get_address', function(req, res, next) {
+    let _id = req.body._id
+    User.findById({
+        _id
+    }).then(user => {
+        if(user) {
+            successRes.data = user.addressList
+            res.json(successRes)
+        } else {
+            errRes.msg = "查找失败"
+            res.json(errRes)
+        }
+    })
+})
+
+//删除地址
+router.post('/user/delete_address', function(req, res, next) {
+    let _id = req.body._id
+    let addressId = req.body.addressId
+    User.findById({
+        _id
+    }).then(user => {
+        if (user.addressList.length === 1) {
+            user.addressList = []
+        } else {
+            user.addressList.forEach((item, index) => {
+                if (item.id === addressId) {
+                    if (item.is_default) {
+                        index === 0
+                            ? user.addressList[1].is_default = true
+                            : user.addressList[0].is_default = true
+                    }
+                    user.addressList.splice(index, 1)
+                }
+            })
+        }
+        return user.save()
+    }).then((user, err) => {
+        if (!err) {
+            successRes.data = user.addressList
+            res.json(successRes)
+        } else {
+            errRes.msg = '删除地址失败'
+            res.json(errRes)
+        }
+    })
+})
+
+//添加到购物车
+router.post('/user/add_to_cart', function(req, res, next) {
+    let _id = req.body._id
+    let good = req.body.good
+    let isOldGood = false
+    User.findById({
+        _id
+    }).then(user => {
+        user.cartList.forEach((item,index) => {
+            if (item.id === good.id) {
+                isOldGood = true
+                item.count += good.count
+            }
+        })
+        if (!isOldGood) {
+            user.cartList.push(good)
+        }
+        return user.save()
+    }).then((user,err) => {
+        if (!err) {
+            successRes.data = user.cartList
+            res.json(successRes)
+        } else {
+            errRes.msg = "添加到购物车失败"
+            res.json(errRes)
+        }
+    })
+})
+
+//获取购物车信息
+router.post('/user/get_cart', function(req, res, next) {
+    let _id = req.body._id
+    User.findById({
+        _id
+    }).then(user => {
+        if(user) {
+            successRes.data = user.cartList
+            res.json(successRes)
+        } else {
+            errRes.msg = "获取购物车信息失败"
+            res.json(errRes)
+        }
+    })
+})
+
+//更新购物车信息
+router.post('/user/update_cart', function (req, res, next) {
+    let _id = req.body._id
+    let cartList = req.body.cartList
+    User.updateOne({
+        _id
+    }, {
+        cartList
+    }).then((user, err) => {
+        if (!err) {
+            successRes.data = cartList
+            res.json(successRes)
+        } else {
+            errRes.msg = '编辑商品失败'
+            res.json(errRes)
+        }
+    })
+})
+
+//添加订单
+router.post('/user/add_order', function (req, res, next) {
+    let _id = req.body._id
+    let goods = req.body.goods
+    let address = req.body.address
+    let payStatus = req.body.payStatus
+    let orderStatus = req.body.orderStatus
+    User.findById({
+        _id
+    }).then(user => {
+        user.orderList.push({
+            goods,
+            address,
+            payStatus,
+            orderStatus
+        })
+        let i = goods.length
+        while(i--) {
+            let good = goods[i]
+            let index = user.cartList.findIndex(item => {
+                return item.id === good.id
+            })
+            user.cartList.splice(index, 1)
+        }
+        return user.save()
+    }).then((user, err) => {
+        if (err) {
+            errRes.msg = "下单失败"
+            res.json(errRes)
+        } else {
+            let promiseAll = goods.map(good => {
+                return Good.updateOne({
+                    _id: good.id
+                }, {
+                    $inc: {stock: -good.count}
+                })
+            })
+            return Promise.all(promiseAll)
+        }
+    }).then((succ,err) => {
+        if (err) {
+            errRes.msg = "更新商品库存失败"
+            res.json(errRes)
+        } else {
+            successRes.data = {}
+            res.json(successRes)
+        }
+    })
+})
+
+//获取订单
+router.post('/user/get_orderList', function(req, res, next) {
+    let _id = req.body._id
+    let orderStatus = req.body.orderStatus
+    User.findById({
+        _id
+    }).then(user => {
+        if(orderStatus) {
+            let arr = user.orderList.filter(item => {
+                return item.orderStatus === orderStatus
+            })
+            successRes.data = arr
+            res.json(successRes)
+        } else {
+            successRes.data = user.orderList
+            res.json(successRes)
+        }
+    }).catch(() => {
+        errRes.msg = "获取订单失败"
+        res.json(errRes)
     })
 })
 
