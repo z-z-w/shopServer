@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var User = require('../models/users')
 var Good = require('../models/goods')
+var Order = require('../models/orders')
 
 var errRes = {
     status: 1,
@@ -273,6 +274,16 @@ router.post('/user/add_order', function (req, res, next) {
     let address = req.body.address
     let payStatus = req.body.payStatus
     let orderStatus = req.body.orderStatus
+    let totalPrice = req.body.totalPrice
+    let orderId = req.body.orderId
+    new Order({
+        goods,
+        address,
+        payStatus,
+        orderStatus,
+        totalPrice,
+        orderId
+    }).save();
     User.findById({
         _id
     }).then(user => {
@@ -280,7 +291,9 @@ router.post('/user/add_order', function (req, res, next) {
             goods,
             address,
             payStatus,
-            orderStatus
+            orderStatus,
+            totalPrice,
+            orderId
         })
         let i = goods.length
         while(i--) {
@@ -327,15 +340,39 @@ router.post('/user/get_orderList', function(req, res, next) {
             let arr = user.orderList.filter(item => {
                 return item.orderStatus === orderStatus
             })
-            successRes.data = arr
+            successRes.data = arr.reverse()
             res.json(successRes)
         } else {
-            successRes.data = user.orderList
+            successRes.data = user.orderList.reverse()
             res.json(successRes)
         }
     }).catch(() => {
         errRes.msg = "获取订单失败"
         res.json(errRes)
+    })
+})
+
+//订单确认送达
+router.post('/user/get_orderConfirm', function(req, res, next) {
+    let _id = req.body._id
+    let orderId = req.body.orderId
+    User.findById({
+        _id
+    }).then(user => {
+        user.orderList.forEach(order => {
+            if (order.orderId === orderId){
+                order.orderStatus = 2
+            }
+        })
+        return user.save()
+    }).then((user,err) => {
+        if(err) {
+            errRes.msg = "确认送达失败"
+            res.json(errRes)
+        } else {
+            successRes.data = {}
+            res.json(successRes)
+        }
     })
 })
 

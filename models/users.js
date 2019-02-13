@@ -17,7 +17,7 @@ const UsersSchema = new mongoose.Schema({
         "tel": String,
         "province": String,
         "city": String,
-        "country": String,
+        "county": String,
         "address_detail": String,
         "area_code": String,
         "postal_code": String,
@@ -36,7 +36,16 @@ const UsersSchema = new mongoose.Schema({
             "stock": Number
         }
     ],
-    "orderList": Array,
+    "orderList": [
+        {
+            "goods": Array,
+            "address": Object,
+            "payStatus": Array,
+            "orderStatus": Number,
+            "totalPrice": Number,
+            "orderId": String
+        }
+    ],
 });
 
 module.exports = mongoose.model('User', UsersSchema);

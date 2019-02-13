@@ -178,8 +178,11 @@ router.post('/category/get_goods', function(req, res, next) {
             {parentCategoryId: id}
         ]
     }).then(goods => {
-        if(goods.length > 0) {
-            successRes.data = goods
+        let arr = goods.filter((good) => {
+            return good.status === 1
+        })
+        if(arr.length > 0) {
+            successRes.data = arr
             res.json(successRes)
         } else {
             errRes.msg = "该品类下暂无商品"
@@ -234,7 +237,11 @@ router.post('/product/list', function(req, res, next) {
         let pages = Math.ceil(count / pageSize)
         let skip = (pageNum - 1) * pageSize
 
-        Good.find().limit(pageSize).skip(skip).sort({_id: -1}).then(goods => {
+        Good.find({
+            $where: function() {
+                return this.status === 1
+            }
+        }).limit(pageSize).skip(skip).sort({_id: -1}).then(goods => {
             successRes.data = {
                 list: goods,
                 pages,
@@ -328,14 +335,12 @@ router.post('/order/search', function(req, res, next) {
     let pageSize = req.body.pageSize || 10
     let pageNum = req.body.pageNum
     let skip = (pageNum - 1) * pageSize
-    console.log(q);
     Order.find({
-        orderNo: new RegExp(q + '.*', 'i')
+        "address.name": new RegExp(q + '.*', 'i')
     }).countDocuments().then(count => {
-        console.log(count);
         if (count) {
             Order.find({
-                orderNo: new RegExp(q + '.*', 'i')
+                "address.name": new RegExp(q + '.*', 'i')
             }).skip(skip).limit(pageSize).sort({_id: -1}).then(orders => {
                 successRes.data = {
                     total: count,
